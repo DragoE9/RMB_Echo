@@ -50,6 +50,6 @@ while True:
             #Garbage collection to prevent previous messages from getting unecessarily big
             if len(previous_messages[i]) > 15:
                 previous_messages[i].pop(0)
-        i += 1
+            i += 1
     print("RMB Search Complete, waiting {} secconds".format(real_sleep))
     time.sleep(real_sleep)    
