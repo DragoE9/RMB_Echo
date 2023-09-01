@@ -29,7 +29,6 @@ while True:
         print(previous_messages)
         for post in api_messages:
             #Check that the post is new
-            print(i)
             if post["id"] not in previous_messages[i]:
                 #Make it pretty
                 pretty_message = re.sub(r"\[quote=.*;\d*\]", "\n> ",post["message"])
