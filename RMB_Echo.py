@@ -26,8 +26,10 @@ while True:
         #Call to the API, retreive messages
         api_region = api.region(current_region)
         api_messages = (api_region.messages)["post"]
+        print(previous_messages)
         for post in api_messages:
             #Check that the post is new
+            print(i)
             if post["id"] not in previous_messages[i]:
                 #Make it pretty
                 pretty_message = re.sub(r"\[quote=.*;\d*\]", "\n> ",post["message"])
@@ -50,6 +52,6 @@ while True:
             #Garbage collection to prevent previous messages from getting unecessarily big
             if len(previous_messages[i]) > 15:
                 previous_messages[i].pop(0)
-            i += 1
+        i += 1
     print("RMB Search Complete, waiting {} secconds".format(real_sleep))
     time.sleep(real_sleep)    
