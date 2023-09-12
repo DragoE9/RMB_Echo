@@ -9,4 +9,5 @@ In addition, you must setup a webhook in your server as described here (https://
 To use, run the RMB_Echo.py file, and enter the required information into the command line prompts. The program must remain open and running for the feed to continue refreshing. 
 Refresh speed is locked at a maximum of once every 100 secconds to prevent the script from being used to creat API spam. Modification of the script to go faster is not endorsed! Unless the region you're using this for is extremley busy, even 100 is probably uncessarily fast.
 ## To-Do
-- Nothing Here Yet
+- Make this read from a config file for easier rebooting
+- Add Multi-Channel option for different regions
