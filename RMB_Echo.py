@@ -45,7 +45,15 @@ while True:
             #Check that the post is new
             if post["id"] not in previous_messages[i]:
                 #Make it pretty
-                pretty_message = re.sub(r"\[quote=.*;\d*\]", "\n> ",post["message"])
+                pretty_message = post["message"]
+                links = re.findall(r'(?<=\[url=)(.*?)(?=\])', post["message"])
+                for entry in links:
+                    fixed_link = "http://" + entry
+                    regex_string = r"(?<=\[url=" + r'{}'.format(entry) + r"\])(.*?)(?=\[/url\])"
+                    link_text = (re.search(r'{}'.format(regex_string),pretty_message))
+                    insertion_string = "[{}]({})".format(link_text.group(),fixed_link)
+                    pretty_message = re.sub(r"\[url=.*?\].*?\[/url]",insertion_string,pretty_message,count=1)
+                pretty_message = re.sub(r"\[quote=.*;\d*\]", "\n> ",pretty_message)
                 pretty_message = pretty_message.replace("[/quote]","\n")
                 pretty_message = pretty_message.replace("[i]","*")
                 pretty_message = pretty_message.replace("[/i]","*")
