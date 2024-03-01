@@ -7,3 +7,5 @@ refresh_rate = 450
 webhooks = ["This string should be a url"]
 #accepts "single" for single channel opperations,or "multi" for posting different regions in different channels
 mode = "single"
+#Optional: List of Hex Colour Codes to use for each region. Will default to rainbow if unused
+colours = []
