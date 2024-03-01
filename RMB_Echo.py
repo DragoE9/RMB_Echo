@@ -36,6 +36,14 @@ elif settings["mode"] == "multi":
 else:
     print("Error: Unkown Mode")
     quit()
+    
+if len(settings["colours"]) == len(targ_regions):
+    palette = settings["colours"]
+else:
+    print("Couldn't Load Colours. Using Defaults")
+    rainbow = [0xff0000,0xff7500,0xffea00,0x00ff00,0x00fffa,0x0000ff,0xff00ff]
+    palette = [rainbow[i % len(rainbow)] for i in range(len(targ_regions))]
+
 
 #First, retreive the messages but don't post
 i = 0
@@ -46,13 +54,14 @@ for current_region in targ_regions:
     for post in api_messages:
         previous_messages[i].append(post["id"])
     i += 1
-print("RMB Echo V2.0.0 Online")
+    
+print("RMB Echo V2.1.0 Online")
 
 class RMB_Echo:
     def __init__(self, p_window):
         #window setup
         self.window = p_window
-        self.window.title("RMB Echo V2.0.0")
+        self.window.title("RMB Echo V2.1.0")
         self.start_button = tkinter.Button(p_window, text="Start", command=self.start_program, width=20, height=5)
         self.start_button.pack()
         self.stop_button = tkinter.Button(p_window, text="Pause", command=self.stop_program, width=20, height=5)
@@ -110,19 +119,24 @@ class RMB_Echo:
                         pretty_message = pretty_message.replace("[/b]","**")
                         pretty_message = pretty_message.replace("[u]","__")
                         pretty_message = pretty_message.replace("[/u]","__")
-                        pretty_name_nation = post["nation"].replace("_"," ").capitalize()
-                        pretty_name_region = current_region.replace("_"," ").capitalize()
+                        pretty_message = pretty_message.replace("[strike]","~~")
+                        pretty_message = pretty_message.replace("[/strike]","~~")
+                        pretty_name_nation = post["nation"].replace("_"," ").title()
+                        pretty_name_region = current_region.replace("_"," ").title()
                         if len(pretty_message) > 1900:
                             final_msg = pretty_message[:1900] + "[...]"
                         else:
                             final_msg = pretty_message
+                        #Make an Embed
+                        embed = discord.Embed(title="Message in {}".format(pretty_name_region),description=final_msg,color=discord.Color(palette[i]))
+                        embed.set_author(name=pretty_name_nation)
                         #Send it off to the Webhook
                         if settings["mode"] == "single":
-                            webhook.send("# {} in {} said:\n{}".format(pretty_name_nation,pretty_name_region,final_msg))
+                            webhook.send(embed=embed)
                             previous_messages[i].append(post["id"])
                         else:
                             webhook = discord.SyncWebhook.from_url(url[i])
-                            webhook.send("# {} in {} said:\n{}".format(pretty_name_nation,pretty_name_region,final_msg))
+                            webhook.send(embed=embed)
                             previous_messages[i].append(post["id"])
                     #Garbage collection to prevent previous messages from getting unecessarily big
                     if len(previous_messages[i]) > 15:
