@@ -1,5 +1,5 @@
 #Enter your main nation, or a name NS Staff would recognize you by as your user agent
-user_agent = "DragoE"
+user_agent = "Your Name"
 regions = ["Warzone Trinidad", "Warzone Tobago"]
 #minimum is 100
 refresh_rate = 450
