@@ -8,12 +8,20 @@ import tkinter
 import threading
 from datetime import datetime
 
+#I need to use this later
+def escape_me(string):
+    result_str = string.replace("?",r"\?")
+    result_str = result_str.replace("*",r"\*")
+    result_str = result_str.replace("(",r"\(")
+    result_str = result_str.replace(")",r"\)")
+    return result_str
+
 #Import settings from config
 with open ("config.toml","rb") as config_file:
     settings = tomli.load(config_file)
 #Setup
 user = settings["user_agent"]
-api = nationstates.Nationstates(user + "Running RMB Echo by DragoE")
+api = nationstates.Nationstates(user + " Running RMB Echo V2.2.0 by DragoE")
 targ_regions = settings["regions"]
 previous_messages = []
 for element in targ_regions:
@@ -55,7 +63,7 @@ for current_region in targ_regions:
         previous_messages[i].append(post["id"])
     i += 1
     
-print("RMB Echo V2.1.0 Online")
+print("RMB Echo V2.2.0 Online")
 
 class RMB_Echo:
     def __init__(self, p_window):
@@ -67,12 +75,18 @@ class RMB_Echo:
         self.stop_button = tkinter.Button(p_window, text="Pause", command=self.stop_program, width=20, height=5)
         self.stop_button.pack()
         self.is_running = False
+        self.awaiting_stop = False
     def start_program(self):
-        self.is_running = True
-        #run the loop in a new thread so the window doesn't hang
-        threading.Thread(target=self.the_function).start()
+        if self.is_running == False and self.awaiting_stop == False:
+            self.is_running = True
+            #run the loop in a new thread so the window doesn't hang
+            threading.Thread(target=self.the_function).start()
+        else:
+            print("Search is already running")
     def stop_program(self):
+        print("Initiating Stop, waiting for wait time to finish")
         self.is_running = False
+        self.awaiting_stop = True
     def the_function(self):
         #Loop Section
         global webhook
@@ -88,10 +102,21 @@ class RMB_Echo:
                     if post["id"] not in previous_messages[i]:
                         #Make it pretty
                         pretty_message = post["message"]
-                        links = re.findall(r'(?<=\[url=)(.*?)(?=\])', post["message"])
+                        pretty_message = pretty_message.replace("[i]","*")
+                        pretty_message = pretty_message.replace("[/i]","*")
+                        pretty_message = pretty_message.replace("[b]","**")
+                        pretty_message = pretty_message.replace("[/b]","**")
+                        pretty_message = pretty_message.replace("[u]","__")
+                        pretty_message = pretty_message.replace("[/u]","__")
+                        links = re.findall(r'(?<=\[url=)(.*?)(?=\])', pretty_message)
                         for entry in links:
-                            fixed_link = "http://" + entry
-                            regex_string = r"(?<=\[url=" + r'{}'.format(entry) + r"\])(.*?)(?=\[/url\])"
+                            if entry[:7] == "http://" or entry[:8] == "https://":
+                                fixed_link = entry
+                            elif entry[:5] == "page=":
+                                fixed_link = "https://www.nationstates.net/" + entry
+                            else:
+                                fixed_link = "http://" + entry
+                            regex_string = r"(?<=\[url=" + r'{}'.format(escape_me(entry)) + r"\])((.|\n)*?)(?=\[/url\])"
                             link_text = (re.search(r'{}'.format(regex_string),pretty_message))
                             insertion_string = "[{}]({})".format(link_text.group(),fixed_link)
                             pretty_message = re.sub(r"\[url=.*?\].*?\[/url]",insertion_string,pretty_message,count=1)
@@ -111,16 +136,17 @@ class RMB_Echo:
                         for entry in quotes:
                             better_quote = "\n> " + entry.replace("\n", "\n> ") + "\n"
                             pretty_message = re.sub(r'\[quote=.*;\d*\][\S\s]*?\[\/quote\]',better_quote,pretty_message,count=1)
-                        #pretty_message = re.sub(r"\[quote=.*;\d*\]", "\n> ",pretty_message)
-                        #pretty_message = pretty_message.replace("[/quote]","\n")
-                        pretty_message = pretty_message.replace("[i]","*")
-                        pretty_message = pretty_message.replace("[/i]","*")
-                        pretty_message = pretty_message.replace("[b]","**")
-                        pretty_message = pretty_message.replace("[/b]","**")
-                        pretty_message = pretty_message.replace("[u]","__")
-                        pretty_message = pretty_message.replace("[/u]","__")
+                        spoilers = re.findall(r'(?<=\[spoiler=)(.*?)(?=])',pretty_message)
+                        for entry in spoilers:
+                            regex_string = r"(?<=\[spoiler=" + r'{}'.format(escape_me(entry)) + r"\])((.|\n)*?)(?=\[/spoiler\])"
+                            spoiled_message = re.search(r"{}".format(regex_string),pretty_message)
+                            insertion_string = "(Spoiler: " + entry + ") ||" + spoiled_message.group() + "||"
+                            pretty_message = re.sub(r"\[spoiler=.*?\](.|\n)*?\[/spoiler]",insertion_string,pretty_message,count=1)
                         pretty_message = pretty_message.replace("[strike]","~~")
                         pretty_message = pretty_message.replace("[/strike]","~~")
+                        pretty_message = pretty_message.replace("[list]","")
+                        pretty_message = pretty_message.replace("[/list]","")
+                        pretty_message = pretty_message.replace("[*]","- ")
                         pretty_name_nation = post["nation"].replace("_"," ").title()
                         pretty_name_region = current_region.replace("_"," ").title()
                         if len(pretty_message) > 1900:
@@ -139,13 +165,14 @@ class RMB_Echo:
                             webhook.send(embed=embed)
                             previous_messages[i].append(post["id"])
                     #Garbage collection to prevent previous messages from getting unecessarily big
-                    if len(previous_messages[i]) > 15:
+                    while len(previous_messages[i]) > 15:
                         previous_messages[i].pop(0)
                 i += 1
             now = datetime.now().strftime("%H:%M:%S")
             print("[{}] RMB Search Complete, waiting {} secconds".format(now, real_sleep))
             time.sleep(real_sleep)
         print("Searching Finnished")
+        self.awaiting_stop = False
 
 #Do the thing
 console = tkinter.Tk()
