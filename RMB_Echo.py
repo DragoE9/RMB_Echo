@@ -52,7 +52,7 @@ else:
     rainbow = [0xff0000,0xff7500,0xffea00,0x00ff00,0x00fffa,0x0000ff,0xff00ff]
     palette = [rainbow[i % len(rainbow)] for i in range(len(targ_regions))]
 
-
+"""
 #First, retreive the messages but don't post
 i = 0
 for current_region in targ_regions:
@@ -61,7 +61,7 @@ for current_region in targ_regions:
     api_messages = (api_region.messages)["post"]
     for post in api_messages:
         previous_messages[i].append(post["id"])
-    i += 1
+    i += 1"""
     
 print("RMB Echo V2.2.0 Online")
 
@@ -119,7 +119,7 @@ class RMB_Echo:
                             regex_string = r"(?<=\[url=" + r'{}'.format(escape_me(entry)) + r"\])((.|\n)*?)(?=\[/url\])"
                             link_text = (re.search(r'{}'.format(regex_string),pretty_message))
                             insertion_string = "[{}]({})".format(link_text.group(),fixed_link)
-                            pretty_message = re.sub(r"\[url=.*?\].*?\[/url]",insertion_string,pretty_message,count=1)
+                            pretty_message = re.sub(r"\[url=.*?\](.|\n)*?\[/url]",insertion_string,pretty_message,count=1)
                         nations = re.findall(r'(?<=\[nation\])(.*?)(?=\[\/nation\])',pretty_message)
                         for entry in nations:
                             name = entry.lower().replace(" ","_")
