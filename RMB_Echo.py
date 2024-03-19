@@ -52,7 +52,7 @@ else:
     rainbow = [0xff0000,0xff7500,0xffea00,0x00ff00,0x00fffa,0x0000ff,0xff00ff]
     palette = [rainbow[i % len(rainbow)] for i in range(len(targ_regions))]
 
-"""
+
 #First, retreive the messages but don't post
 i = 0
 for current_region in targ_regions:
@@ -61,7 +61,7 @@ for current_region in targ_regions:
     api_messages = (api_region.messages)["post"]
     for post in api_messages:
         previous_messages[i].append(post["id"])
-    i += 1"""
+    i += 1
     
 print("RMB Echo V2.2.0 Online")
 
