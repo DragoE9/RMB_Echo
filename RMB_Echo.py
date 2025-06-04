@@ -1,6 +1,6 @@
 from os import link
-import nationstates
-import time
+import sans
+from time import sleep
 import discord
 import re
 import tomli
@@ -21,16 +21,8 @@ with open ("config.toml","rb") as config_file:
     settings = tomli.load(config_file)
 #Setup
 user = settings["user_agent"]
-api = nationstates.Nationstates(user + " Running RMB Echo V2.2.0 by DragoE")
+sans.set_agent(user + " Running RMB Echo V3.0.0 by DragoE")
 targ_regions = settings["regions"]
-previous_messages = []
-for element in targ_regions:
-    previous_messages.append([])
-requested_sleep = settings["refresh_rate"]
-if requested_sleep < 100:
-    real_sleep = 100
-else:
-    real_sleep = requested_sleep
 url = settings["webhooks"]
 if settings["mode"] == "single":
     webhook = discord.SyncWebhook.from_url(url[0])
@@ -51,19 +43,8 @@ else:
     print("Couldn't Load Colours. Using Defaults")
     rainbow = [0xff0000,0xff7500,0xffea00,0x00ff00,0x00fffa,0x0000ff,0xff00ff]
     palette = [rainbow[i % len(rainbow)] for i in range(len(targ_regions))]
-
-
-#First, retreive the messages but don't post
-i = 0
-for current_region in targ_regions:
-    #Call to the API, retreive messages
-    api_region = api.region(current_region)
-    api_messages = (api_region.messages)["post"]
-    for post in api_messages:
-        previous_messages[i].append(post["id"])
-    i += 1
     
-print("RMB Echo V2.2.0 Online")
+print("RMB Echo V3.0.0 Online")
 
 class RMB_Echo:
     def __init__(self, p_window):
@@ -75,104 +56,108 @@ class RMB_Echo:
         self.stop_button = tkinter.Button(p_window, text="Pause", command=self.stop_program, width=20, height=5)
         self.stop_button.pack()
         self.is_running = False
-        self.awaiting_stop = False
     def start_program(self):
-        if self.is_running == False and self.awaiting_stop == False:
+        if self.is_running == False
             self.is_running = True
             #run the loop in a new thread so the window doesn't hang
-            threading.Thread(target=self.the_function).start()
+            self.sse_thread = threading.Thread(target=self.the_function,daemon=True)
+            sse_thread.start()
         else:
             print("Search is already running")
     def stop_program(self):
-        print("Initiating Stop, waiting for wait time to finish")
+        print("Initiating Stop")
+        #This is stupid. Who knew killing a thread in python would be so difficult?
         self.is_running = False
-        self.awaiting_stop = True
+        self.sse_thread.raise_exception()
+        self.sse_thread.join()
+        print(str(sse_thread.isAlive()))
     def the_function(self):
         #Loop Section
         global webhook
-        while self.is_running:
-            i = 0
-            #Iterate over every region provided in targ_regions
-            for current_region in targ_regions:
-                #Call to the API, retreive messages
-                api_region = api.region(current_region)
-                api_messages = (api_region.messages)["post"]
-                for post in api_messages:
-                    #Check that the post is new
-                    if post["id"] not in previous_messages[i]:
-                        #Make it pretty
-                        pretty_message = post["message"]
-                        pretty_message = pretty_message.replace("[i]","*")
-                        pretty_message = pretty_message.replace("[/i]","*")
-                        pretty_message = pretty_message.replace("[b]","**")
-                        pretty_message = pretty_message.replace("[/b]","**")
-                        pretty_message = pretty_message.replace("[u]","__")
-                        pretty_message = pretty_message.replace("[/u]","__")
-                        links = re.findall(r'(?<=\[url=)(.*?)(?=\])', pretty_message)
-                        for entry in links:
-                            if entry[:7] == "http://" or entry[:8] == "https://":
-                                fixed_link = entry
-                            elif entry[:5] == "page=":
-                                fixed_link = "https://www.nationstates.net/" + entry
-                            else:
-                                fixed_link = "http://" + entry
-                            regex_string = r"(?<=\[url=" + r'{}'.format(escape_me(entry)) + r"\])((.|\n)*?)(?=\[/url\])"
-                            link_text = (re.search(r'{}'.format(regex_string),pretty_message))
-                            insertion_string = "[{}]({})".format(link_text.group(),fixed_link)
-                            pretty_message = re.sub(r"\[url=.*?\](.|\n)*?\[/url]",insertion_string,pretty_message,count=1)
-                        nations = re.findall(r'(?<=\[nation\])(.*?)(?=\[\/nation\])',pretty_message)
-                        for entry in nations:
-                            name = entry.lower().replace(" ","_")
-                            fixed_link = "http://nationstates.net/nation=" + name
-                            insertion_string = "[{}]({})".format(entry,fixed_link)
-                            pretty_message = re.sub(r'\[nation\].*?\[\/nation\]',insertion_string,pretty_message,count=1)
-                        regions = re.findall(r'(?<=\[region\])(.*?)(?=\[\/region\])',pretty_message)
-                        for entry in regions:
-                            name = entry.lower().replace(" ","_")
-                            fixed_link = "http://nationstates.net/region=" + name
-                            insertion_string = "[{}]({})".format(entry,fixed_link)
-                            pretty_message = re.sub(r'\[region\].*?\[\/region\]',insertion_string,pretty_message,count=1)
-                        quotes = re.findall(r'\[quote=.*;\d*\]([\S\s]*?)\[\/quote\]', pretty_message)
-                        for entry in quotes:
-                            better_quote = "\n> " + entry.replace("\n", "\n> ") + "\n"
-                            pretty_message = re.sub(r'\[quote=.*;\d*\][\S\s]*?\[\/quote\]',better_quote,pretty_message,count=1)
-                        spoilers = re.findall(r'(?<=\[spoiler=)(.*?)(?=])',pretty_message)
-                        for entry in spoilers:
-                            regex_string = r"(?<=\[spoiler=" + r'{}'.format(escape_me(entry)) + r"\])((.|\n)*?)(?=\[/spoiler\])"
-                            spoiled_message = re.search(r"{}".format(regex_string),pretty_message)
-                            insertion_string = "(Spoiler: " + entry + ") ||" + spoiled_message.group() + "||"
-                            pretty_message = re.sub(r"\[spoiler=.*?\](.|\n)*?\[/spoiler]",insertion_string,pretty_message,count=1)
-                        pretty_message = pretty_message.replace("[strike]","~~")
-                        pretty_message = pretty_message.replace("[/strike]","~~")
-                        pretty_message = pretty_message.replace("[list]","")
-                        pretty_message = pretty_message.replace("[/list]","")
-                        pretty_message = pretty_message.replace("[*]","- ")
-                        pretty_name_nation = post["nation"].replace("_"," ").title()
-                        pretty_name_region = current_region.replace("_"," ").title()
-                        if len(pretty_message) > 1900:
-                            final_msg = pretty_message[:1900] + "[...]"
-                        else:
-                            final_msg = pretty_message
-                        #Make an Embed
-                        embed = discord.Embed(title="Message in {}".format(pretty_name_region),description=final_msg,color=discord.Color(palette[i]))
-                        embed.set_author(name=pretty_name_nation)
-                        #Send it off to the Webhook
-                        if settings["mode"] == "single":
-                            webhook.send(embed=embed)
-                            previous_messages[i].append(post["id"])
-                        else:
-                            webhook = discord.SyncWebhook.from_url(url[i])
-                            webhook.send(embed=embed)
-                            previous_messages[i].append(post["id"])
-                    #Garbage collection to prevent previous messages from getting unecessarily big
-                    while len(previous_messages[i]) > 15:
-                        previous_messages[i].pop(0)
-                i += 1
-            now = datetime.now().strftime("%H:%M:%S")
-            print("[{}] RMB Search Complete, waiting {} secconds".format(now, real_sleep))
-            time.sleep(real_sleep)
-        print("Searching Finnished")
-        self.awaiting_stop = False
+        for event in sans.serversent_events(sans.Client(),"rmb").view(regions=targ_regions):
+            #Upon Receiving an RMB Message Event from SSE
+            #Identify the region
+            #This should hopefully never overspeed the rate-limit if used on its own. If used with other scripts... hopefully sans' internal rate-limiting catches it
+            region = re.search(r"%%(.*)%%",event["str"]).group(1)
+            i = targ_regions.index(region)
+            #Get the text of the message
+            try:
+                response = sans.get(sans.Region(region,"messages",limit=1))
+                pretty_message = response.find("MESSAGE").text
+                sleep(0.6)
+                #Make it pretty
+                pretty_message = pretty_message.replace("[i]","*")
+                pretty_message = pretty_message.replace("[/i]","*")
+                pretty_message = pretty_message.replace("[b]","**")
+                pretty_message = pretty_message.replace("[/b]","**")
+                pretty_message = pretty_message.replace("[u]","__")
+                pretty_message = pretty_message.replace("[/u]","__")
+                links = re.findall(r'(?<=\[url=)(.*?)(?=\])', pretty_message)
+                for entry in links:
+                    if entry[:7] == "http://" or entry[:8] == "https://":
+                        fixed_link = entry
+                    elif entry[:5] == "page=":
+                        fixed_link = "https://www.nationstates.net/" + entry
+                    else:
+                        fixed_link = "http://" + entry
+                    regex_string = r"(?<=\[url=" + r'{}'.format(escape_me(entry)) + r"\])((.|\n)*?)(?=\[/url\])"
+                    link_text = (re.search(r'{}'.format(regex_string),pretty_message))
+                    insertion_string = "[{}]({})".format(link_text.group(),fixed_link)
+                    pretty_message = re.sub(r"\[url=.*?\](.|\n)*?\[/url]",insertion_string,pretty_message,count=1)
+                nations = re.findall(r'(?<=\[nation\])(.*?)(?=\[\/nation\])',pretty_message)
+                for entry in nations:
+                    name = entry.lower().replace(" ","_")
+                    fixed_link = "http://nationstates.net/nation=" + name
+                    insertion_string = "[{}]({})".format(entry,fixed_link)
+                    pretty_message = re.sub(r'\[nation\].*?\[\/nation\]',insertion_string,pretty_message,count=1)
+                regions = re.findall(r'(?<=\[region\])(.*?)(?=\[\/region\])',pretty_message)
+                for entry in regions:
+                    name = entry.lower().replace(" ","_")
+                    fixed_link = "http://nationstates.net/region=" + name
+                    insertion_string = "[{}]({})".format(entry,fixed_link)
+                    pretty_message = re.sub(r'\[region\].*?\[\/region\]',insertion_string,pretty_message,count=1)
+                quotes = re.findall(r'\[quote=.*;\d*\]([\S\s]*?)\[\/quote\]', pretty_message)
+                for entry in quotes:
+                    better_quote = "\n> " + entry.replace("\n", "\n> ") + "\n"
+                    pretty_message = re.sub(r'\[quote=.*;\d*\][\S\s]*?\[\/quote\]',better_quote,pretty_message,count=1)
+                spoilers = re.findall(r'(?<=\[spoiler=)(.*?)(?=])',pretty_message)
+                for entry in spoilers:
+                    regex_string = r"(?<=\[spoiler=" + r'{}'.format(escape_me(entry)) + r"\])((.|\n)*?)(?=\[/spoiler\])"
+                    spoiled_message = re.search(r"{}".format(regex_string),pretty_message)
+                    insertion_string = "(Spoiler: " + entry + ") ||" + spoiled_message.group() + "||"
+                    pretty_message = re.sub(r"\[spoiler=.*?\](.|\n)*?\[/spoiler]",insertion_string,pretty_message,count=1)
+                pretty_message = pretty_message.replace("[strike]","~~")
+                pretty_message = pretty_message.replace("[/strike]","~~")
+                pretty_message = pretty_message.replace("[list]","")
+                pretty_message = pretty_message.replace("[/list]","")
+                pretty_message = pretty_message.replace("[*]","- ")
+                pretty_name_nation = post["nation"].replace("_"," ").title()
+                pretty_name_region = current_region.replace("_"," ").title()
+                if len(pretty_message) > 1900:
+                    final_msg = pretty_message[:1900] + "[...]"
+                else:
+                    final_msg = pretty_message
+                #Make an Embed
+                embed = discord.Embed(title="Message in {}".format(pretty_name_region),description=final_msg,color=discord.Color(palette[i]))
+                embed.set_author(name=pretty_name_nation)
+                #Send it off to the Webhook
+                if settings["mode"] == "single":
+                    webhook.send(embed=embed)
+                else:
+                    webhook = discord.SyncWebhook.from_url(url[i])
+                    webhook.send(embed=embed)
+                now = datetime.now().strftime("%H:%M:%S")
+                print("[{}] Made a post for {}".format(now, region))
+            except Exception as e:
+                #Lazy Error Handling
+                print("An Error Occured while trying to fetch or send the post")
+                print(e)
+            #Check if it's time to stop, this whole thing is kinda stupid but past me wanted a GUI so this is what we get
+            if self.is_running == False:
+                break
+        #I don't even know if this is necessary or will ever get called, but better safe then sorry!
+        print("Disconnected")
+        return
 
 #Do the thing
 console = tkinter.Tk()
