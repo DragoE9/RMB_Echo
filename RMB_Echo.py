@@ -1,4 +1,3 @@
-from os import link
 import sans
 from time import sleep
 import discord
@@ -7,6 +6,8 @@ import tomli
 import tkinter
 import threading
 from datetime import datetime
+import sys
+import xml.etree.ElementTree as ET
 
 #I need to use this later
 def escape_me(string):
@@ -22,7 +23,7 @@ with open ("config.toml","rb") as config_file:
 #Setup
 user = settings["user_agent"]
 sans.set_agent(user + " Running RMB Echo V3.0.0 by DragoE")
-targ_regions = settings["regions"]
+targ_regions = [x.lower().replace(" ","_") for x in settings["regions"]]
 url = settings["webhooks"]
 if settings["mode"] == "single":
     webhook = discord.SyncWebhook.from_url(url[0])
@@ -50,27 +51,28 @@ class RMB_Echo:
     def __init__(self, p_window):
         #window setup
         self.window = p_window
-        self.window.title("RMB Echo V2.1.0")
+        self.window.title("RMB Echo V3.0.0")
         self.start_button = tkinter.Button(p_window, text="Start", command=self.start_program, width=20, height=5)
         self.start_button.pack()
-        self.stop_button = tkinter.Button(p_window, text="Pause", command=self.stop_program, width=20, height=5)
+        self.stop_button = tkinter.Button(p_window, text="Exit", command=self.stop_program, width=20, height=5)
         self.stop_button.pack()
         self.is_running = False
+    
     def start_program(self):
-        if self.is_running == False
+        if self.is_running == False:
             self.is_running = True
             #run the loop in a new thread so the window doesn't hang
             self.sse_thread = threading.Thread(target=self.the_function,daemon=True)
-            sse_thread.start()
+            self.sse_thread.start()
         else:
             print("Search is already running")
+
     def stop_program(self):
         print("Initiating Stop")
-        #This is stupid. Who knew killing a thread in python would be so difficult?
-        self.is_running = False
-        self.sse_thread.raise_exception()
-        self.sse_thread.join()
-        print(str(sse_thread.isAlive()))
+        #Killing a thread in python is nearly impossible apparently, and I don't wanna deal with it. So this button now just kills everything
+        #Thread will end bc it's daemon
+        sys.exit(0)
+
     def the_function(self):
         #Loop Section
         global webhook
@@ -82,8 +84,10 @@ class RMB_Echo:
             i = targ_regions.index(region)
             #Get the text of the message
             try:
-                response = sans.get(sans.Region(region,"messages",limit=1))
-                pretty_message = response.find("MESSAGE").text
+                response = sans.get(sans.Region(region,"messages",limit=1)).xml
+                print(ET.tostring(response, encoding='unicode'))
+                #Note to self. .// required if you wanna search the entire tree
+                pretty_message = response.find(".//MESSAGE").text
                 sleep(0.6)
                 #Make it pretty
                 pretty_message = pretty_message.replace("[i]","*")
@@ -131,8 +135,8 @@ class RMB_Echo:
                 pretty_message = pretty_message.replace("[list]","")
                 pretty_message = pretty_message.replace("[/list]","")
                 pretty_message = pretty_message.replace("[*]","- ")
-                pretty_name_nation = post["nation"].replace("_"," ").title()
-                pretty_name_region = current_region.replace("_"," ").title()
+                pretty_name_nation = response.find(".//NATION").text.replace("_"," ").title()
+                pretty_name_region = region.replace("_"," ").title()
                 if len(pretty_message) > 1900:
                     final_msg = pretty_message[:1900] + "[...]"
                 else:
@@ -152,12 +156,6 @@ class RMB_Echo:
                 #Lazy Error Handling
                 print("An Error Occured while trying to fetch or send the post")
                 print(e)
-            #Check if it's time to stop, this whole thing is kinda stupid but past me wanted a GUI so this is what we get
-            if self.is_running == False:
-                break
-        #I don't even know if this is necessary or will ever get called, but better safe then sorry!
-        print("Disconnected")
-        return
 
 #Do the thing
 console = tkinter.Tk()
